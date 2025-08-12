@@ -55,7 +55,7 @@ const Header = (props: {
                   className={cn(
                     'absolute left-2.5 top-0 block h-full w-0.5 rounded-sm bg-foreground delay-300 duration-200 ease-in-out',
                     {
-                      '!h-0 !delay-[0]': !props.sidebarOpen,
+                      '!h-0 ': !props.sidebarOpen,
                     }
                   )}
                 ></span>

@@ -8,105 +8,526 @@ generator client {
 }
 
 model User {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
 
-  email                     String?         @unique
-  username                  String?         @unique
-  isAdmin                   Boolean         @default(false)
+  email    String? @unique
+  username String? @unique
+  isAdmin  Boolean @default(false)
 
-  paymentProcessorUserId    String?         @unique
-  lemonSqueezyCustomerPortalUrl String?     // You can delete this if you're not using Lemon Squeezy as your payments processor.
-  subscriptionStatus        String?         // 'active', 'cancel_at_period_end', 'past_due', 'deleted'
-  subscriptionPlan          String?         // 'hobby', 'pro'
-  datePaid                  DateTime?
-  credits                   Int             @default(3)
+  paymentProcessorUserId        String?   @unique
+  lemonSqueezyCustomerPortalUrl String? // You can delete this if you're not using Lemon Squeezy as your payments processor.
+  subscriptionStatus            String? // 'active', 'cancel_at_period_end', 'past_due', 'deleted'
+  subscriptionPlan              String? // 'hobby', 'pro'
+  datePaid                      DateTime?
+  credits                       Int       @default(3)
 
-  gptResponses              GptResponse[]
-  contactFormMessages       ContactFormMessage[]
-  tasks                     Task[]
-  files                     File[]
+  // Settings
+  preferences Json? // UI preferences, notifications, etc.
+  timezone    String? @default("UTC")
+
+  // Relations
+  workspaces WorkspaceMember[]
+  forms      Form[]
+  templates  Template[]
+  responses  Response[]
+
+  // to remove 
+  gptResponses        GptResponse[]
+  contactFormMessages ContactFormMessage[]
+  tasks               Task[]
+  files               File[]
+  TemplateReview      TemplateReview[]
 }
 
-model GptResponse {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
-  updatedAt                 DateTime        @updatedAt
+model Workspace {
+  id          String  @id @default(cuid())
+  name        String
+  slug        String  @unique
+  description String?
+  avatar      String?
 
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
+  // Settings
+  settings Json? // Branding, custom domains, etc.
 
-  content                   String
+  // Relations
+  members   WorkspaceMember[]
+  forms     Form[]
+  templates Template[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("workspaces")
 }
 
-model Task {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
+model WorkspaceMember {
+  id   String        @id @default(cuid())
+  role WorkspaceRole @default(MEMBER)
 
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
+  // Relations
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspaceId String
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 
-  description               String
-  time                      String          @default("1")
-  isDone                    Boolean         @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, workspaceId])
+  @@map("workspace_members")
+}
+
+model Form {
+  id          String  @id @default(cuid())
+  title       String
+  description String?
+  slug        String  @unique
+
+  // Form Configuration
+  type   FormType   @default(FORM)
+  status FormStatus @default(DRAFT)
+
+  // Appearance & Branding
+  theme   Json? // Colors, fonts, background
+  logo    String?
+  favicon String?
+
+  // Behavior Settings
+  settings Json? // Notifications, redirects, etc.
+
+  // Quiz-specific settings
+  quizSettings Json? // Scoring, pass/fail, results display
+
+  // Poll-specific settings  
+  pollSettings Json? // Multiple responses, real-time results
+
+  // SEO & Metadata
+  metaTitle       String?
+  metaDescription String?
+  ogImage         String?
+
+  // Publishing & Access
+  isPublished    Boolean    @default(false)
+  publishedAt    DateTime?
+  password       String? // Password protection
+  accessType     AccessType @default(PUBLIC)
+  allowedDomains String[] // Email domain restrictions
+
+  // Limits & Quotas
+  responseLimit Int? // Max responses allowed
+  expiresAt     DateTime? // Form expiration
+
+  // Relations
+  creatorId   String
+  creator     User       @relation(fields: [creatorId], references: [id])
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+
+  fields       Field[]
+  responses    Response[]
+  analytics    FormAnalytic[]
+  integrations FormIntegration[]
+
+  // Template relation (if form was created from template)
+  templateId String?
+  template   Template? @relation(fields: [templateId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("forms")
+}
+
+// Form Fields/Questions
+model Field {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  type        FieldType
+
+  // Field Configuration
+  required   Boolean  @default(false)
+  order      Int
+  properties Json? // Field-specific properties (validation, etc.)
+  options    Option[]
+
+  // Quiz-specific properties
+  correctAnswer String? // For quiz questions
+  points        Int? // Points for correct answer
+  explanation   String? // Explanation for quiz answers
+
+  // Conditional Logic
+  logic Json? // Show/hide conditions, branching
+
+  // Relations
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  answers Answer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("fields")
+}
+
+model Option {
+  id        String   @id @default(cuid())
+  order     Int
+  label     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  isCorrect Boolean?
+  fieldId   String
+  field     Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+
+  @@map("options")
+}
+
+// Form Responses/Submissions
+model Response {
+  id String @id @default(cuid())
+
+  // Response metadata
+  status         ResponseStatus @default(COMPLETED)
+  completionTime Int? // Time taken in seconds
+  ipAddress      String?
+  userAgent      String?
+  referrer       String?
+
+  // Quiz-specific data
+  score       Float? // Quiz score (0-100)
+  passed      Boolean? // Did they pass the quiz
+  totalPoints Int? // Total points earned
+  maxPoints   Int? // Maximum possible points
+
+  // Respondent info (optional)
+  respondentId    String?
+  respondent      User?   @relation(fields: [respondentId], references: [id])
+  respondentEmail String?
+  respondentName  String?
+
+  // Relations
+  formId  String
+  form    Form     @relation(fields: [formId], references: [id], onDelete: Cascade)
+  answers Answer[]
+
+  // Tracking
+  startedAt   DateTime?
+  submittedAt DateTime  @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("responses")
+}
+
+// Individual Field Answers
+model Answer {
+  id    String @id @default(cuid())
+  value Json // Flexible storage for different answer types
+
+  // Relations
+  fieldId    String
+  field      Field    @relation(fields: [fieldId], references: [id], onDelete: Cascade)
+  responseId String
+  response   Response @relation(fields: [responseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([fieldId, responseId])
+  @@map("answers")
+}
+
+// Templates
+model Template {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  category    String?
+  tags        String[]
+  thumbnail   String?
+
+  // Template data
+  structure Json // Form structure (fields, settings, etc.)
+  type      FormType
+
+  // Visibility & Access
+  isPublic  Boolean @default(false)
+  isPremium Boolean @default(false)
+
+  // Usage stats
+  useCount Int    @default(0)
+  rating   Float?
+
+  // Relations
+  creatorId   String
+  creator     User       @relation(fields: [creatorId], references: [id])
+  workspaceId String?
+  workspace   Workspace? @relation(fields: [workspaceId], references: [id])
+
+  forms   Form[] // Forms created from this template
+  reviews TemplateReview[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("templates")
+}
+
+model TemplateReview {
+  id      String  @id @default(cuid())
+  rating  Int // 1-5 stars
+  comment String?
+
+  // Relations
+  templateId String
+  template   Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([templateId, userId])
+  @@map("template_reviews")
+}
+
+// Analytics & Reporting
+model FormAnalytic {
+  id   String   @id @default(cuid())
+  date DateTime
+
+  // Metrics
+  views       Int    @default(0)
+  starts      Int    @default(0)
+  completions Int    @default(0)
+  abandons    Int    @default(0)
+  avgTime     Float? // Average completion time
+
+  // Quiz-specific metrics
+  avgScore Float?
+  passRate Float?
+
+  // Relations
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  @@unique([formId, date])
+  @@map("form_analytics")
+}
+
+// Integrations (Webhooks, Zapier, etc.)
+model FormIntegration {
+  id       String          @id @default(cuid())
+  type     IntegrationType
+  name     String
+  config   Json // Integration-specific configuration
+  isActive Boolean         @default(true)
+
+  // Relations
+  formId String
+  form   Form   @relation(fields: [formId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("form_integrations")
 }
 
 model File {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
 
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
-  name                      String
-  type                      String
-  key                       String
-  uploadUrl                 String
+  name      String
+  type      String
+  key       String
+  uploadUrl String
+}
+
+// Enums
+enum UserRole {
+  USER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum WorkspaceRole {
+  MEMBER
+  ADMIN
+  OWNER
+}
+
+enum Plan {
+  FREE
+  BASIC
+  PRO
+  ENTERPRISE
+}
+
+enum FormType {
+  FORM
+  QUIZ
+  POLL
+  SURVEY
+  REGISTRATION
+  ORDER
+  CONTACT
+}
+
+enum FormStatus {
+  DRAFT
+  PUBLISHED
+  PAUSED
+  ARCHIVED
+}
+
+enum AccessType {
+  PUBLIC
+  PRIVATE
+  PASSWORD_PROTECTED
+  DOMAIN_RESTRICTED
+}
+
+enum FieldType {
+  // Text inputs
+  SHORT_TEXT
+  LONG_TEXT
+  EMAIL
+  PHONE
+  URL
+  NUMBER
+
+  // Choices
+  MULTIPLE_CHOICE
+  DROPDOWN
+  CHECKBOXES
+
+  // Rating & Opinion
+  RATING
+  OPINION_SCALE
+  RANKING
+
+  // Date & Time
+  DATE
+  TIME
+  DATETIME
+
+  // File & Media
+  FILE_UPLOAD
+  IMAGE_UPLOAD
+
+  // Advanced
+  SIGNATURE
+  PAYMENT
+  LEGAL
+
+  // Quiz specific
+  TRUE_FALSE
+  FILL_IN_BLANK
+  QUIZ
+
+  // Poll specific
+  POLL_CHOICE
+
+  // Layout
+  SECTION_BREAK
+  THANK_YOU
+  REDIRECT
+}
+
+enum ResponseStatus {
+  STARTED
+  COMPLETED
+  ABANDONED
+}
+
+enum IntegrationType {
+  WEBHOOK
+  ZAPIER
+  EMAIL
+  SLACK
+  GOOGLE_SHEETS
+  NOTION
+  AIRTABLE
+  MAILCHIMP
+  HUBSPOT
+}
+
+// To delete
+
+model GptResponse {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  content String
+}
+
+model Task {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
+
+  description String
+  time        String  @default("1")
+  isDone      Boolean @default(false)
 }
 
 model DailyStats {
-  id                               Int             @id @default(autoincrement())
-  date                             DateTime        @default(now()) @unique
+  id   Int      @id @default(autoincrement())
+  date DateTime @unique @default(now())
 
-  totalViews                       Int             @default(0)
-  prevDayViewsChangePercent        String          @default("0")
-  userCount                        Int             @default(0)
-  paidUserCount                    Int             @default(0)
-  userDelta                        Int             @default(0)
-  paidUserDelta                    Int             @default(0)
-  totalRevenue                     Float           @default(0)
-  totalProfit                      Float           @default(0)
+  totalViews                Int    @default(0)
+  prevDayViewsChangePercent String @default("0")
+  userCount                 Int    @default(0)
+  paidUserCount             Int    @default(0)
+  userDelta                 Int    @default(0)
+  paidUserDelta             Int    @default(0)
+  totalRevenue              Float  @default(0)
+  totalProfit               Float  @default(0)
 
-  sources                          PageViewSource[]
+  sources PageViewSource[]
 }
 
 model PageViewSource {
+  name String
+  date DateTime @default(now())
+
+  dailyStats   DailyStats? @relation(fields: [dailyStatsId], references: [id])
+  dailyStatsId Int?
+
+  visitors Int
+
   @@id([date, name])
-  name                     String
-  date                     DateTime        @default(now())
-
-  dailyStats               DailyStats?     @relation(fields: [dailyStatsId], references: [id])
-  dailyStatsId             Int?
-
-  visitors                 Int
 }
 
 model Logs {
-  id                       Int             @id @default(autoincrement())
-  createdAt                DateTime        @default(now())
+  id        Int      @id @default(autoincrement())
+  createdAt DateTime @default(now())
 
-  message                  String
-  level                    String
+  message String
+  level   String
 }
 
 model ContactFormMessage {
-  id                        String          @id @default(uuid())
-  createdAt                 DateTime        @default(now())
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
 
-  user                      User            @relation(fields: [userId], references: [id])
-  userId                    String
+  user   User   @relation(fields: [userId], references: [id])
+  userId String
 
-  content                   String
-  isRead                    Boolean         @default(false)
-  repliedAt                 DateTime?
+  content   String
+  isRead    Boolean   @default(false)
+  repliedAt DateTime?
 }

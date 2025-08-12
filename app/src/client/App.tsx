@@ -20,7 +20,8 @@ export default function App() {
 
   const shouldDisplayAppNavBar = useMemo(() => {
     return (
-      location.pathname !== routes.LoginRoute.build() && location.pathname !== routes.SignupRoute.build()
+      location.pathname === "/"
+      // location.pathname !== routes.LoginRoute.build() && location.pathname !== routes.SignupRoute.build()
     );
   }, [location]);
 
@@ -46,7 +47,7 @@ export default function App() {
         ) : (
           <>
             {shouldDisplayAppNavBar && <NavBar navigationItems={navigationItems} />}
-            <div className='mx-auto max-w-screen-2xl'>
+            <div className='mx-auto '>
               <Outlet />
             </div>
           </>

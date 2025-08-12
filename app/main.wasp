@@ -52,10 +52,10 @@ app OpenSaaS {
         userSignupFields: import { getEmailUserFields } from "@src/auth/userSignupFields",
       },
       // Uncomment to enable Google Auth (check https://wasp.sh/docs/auth/social-auth/google for setup instructions):
-      // google: { // Guide for setting up Auth via Google
-      //   userSignupFields: import { getGoogleUserFields } from "@src/auth/userSignupFields",
-      //   configFn: import { getGoogleAuthConfig } from "@src/auth/userSignupFields",
-      // },
+      google: { // Guide for setting up Auth via Google
+        userSignupFields: import { getGoogleUserFields } from "@src/auth/userSignupFields",
+        configFn: import { getGoogleAuthConfig } from "@src/auth/userSignupFields",
+      },
       // Uncomment to enable GitHub Auth (check https://wasp.sh/docs/auth/social-auth/github for setup instructions):
       // gitHub: {
       //   userSignupFields: import { getGitHubUserFields } from "@src/auth/userSignupFields",
@@ -75,7 +75,7 @@ app OpenSaaS {
     // Run `wasp db seed` to seed the database with the seed functions below:
     seeds: [
       // Populates the database with a bunch of fake users to work with during development.
-      import { seedMockUsers } from "@src/server/scripts/dbSeeds",
+      import { dbSeed } from "@src/server/scripts/dbSeeds",
     ]
   },
 
@@ -145,6 +145,59 @@ action updateIsUserAdminById {
   entities: [User]
 }
 //#endregion
+
+//#routes
+
+route FormsRoute { path: "/forms", to: Forms }
+page Forms {
+  component: import Forms from "@src/client/pages/FormsPage"
+}
+
+
+//#endregion
+
+//#region Workspace
+
+query getWorkspaces {
+  fn: import getWorkspaces from "@src/backend/workspace/getWorkspaces",
+  entities: [Workspace]
+}
+
+action createWorkspace {
+  fn: import createWorkspace from "@src/backend/workspace/createWorkspace",
+  entities: [Workspace]
+}
+
+//#endregion
+
+//#region Template
+
+query getPublicTemplates {
+  fn: import getPublicTemplates from "@src/backend/template/getPublicTemplates",
+  entities: [Template]
+}
+
+//#endregion
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 //#region Demo AI App
 route DemoAppRoute { path: "/demo-app", to: DemoAppPage }
