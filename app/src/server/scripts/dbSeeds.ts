@@ -1,15 +1,20 @@
 import { PrismaClient } from "wasp/server";
+import { FieldType, FormType } from "@prisma/client";
+import crypto from "crypto";
+import { FormSettings, FormTheme, TemplateStructure } from "../../backend/types/JsonTypes";
+import { InputJsonValue, JsonObject } from "@prisma/client/runtime/library";
 
 export async function dbSeed(prisma: PrismaClient) {
-  // Create a workspace for the templates
+  // Create a workspace for public templates
   const workspace = await prisma.workspace.create({
-    data: { 
-      name: "Public Templates", 
+    data: {
+      name: "Public Templates",
       slug: crypto.randomUUID(),
       description: "Collection of public form templates",
     },
   });
 
+  // Find an admin user
   const adminUser = await prisma.user.findFirst({ where: { isAdmin: true } });
 
   if (!adminUser) {
@@ -17,302 +22,117 @@ export async function dbSeed(prisma: PrismaClient) {
     return;
   }
 
-  // Create multiple public templates
-  await prisma.template.create({
-    data: {
-      creatorId: adminUser.id,
-      isPublic: true,
-      structure: {
-        theme: { primaryColor: "#4B5EAA", font: "Inter" },
-        settings: { showProgressBar: true, allowMultipleSubmissions: false },
+  // Define the template structure
+  const templateStructure: TemplateStructure = {
+    type: FormType.REGISTRATION,
+    theme: {
+      primaryColor: "#4A90E2",
+      mode: "light",
+      fontFamily: "Roboto, sans-serif",
+      fontSize: 16,
+      borderRadius: 4,
+    } as FormTheme,
+    settings: {
+      showProgressBar: true,
+      allowSaveAndResume: false,
+      submitButtonText: "Register",
+      successMessage: "Thank you for registering!",
+      errorMessage: "There was an error submitting your registration.",
+    } as FormSettings,
+    quizSettings: undefined, // Not applicable for REGISTRATION form
+    pollSettings: undefined, // Not applicable for REGISTRATION form
+    fields: [
+      {
+        order: 1,
+        title: "Full Name",
+        type: FieldType.SHORT_TEXT,
+        required: true,
+        properties: {
+          placeholder: "Enter your full name",
+          minLength: 2,
+          maxLength: 100,
+        },
       },
-      type: "SURVEY",
-      name: "Customer Feedback Survey",
-      description: "Gather detailed customer feedback about your products or services.",
-      category: "Customer Experience",
-      tags: ["survey", "feedback", "customer satisfaction"],
-      workspaceId: workspace.id,
-      forms: {
-        create: [
-          {
-            creatorId: adminUser.id,
-            slug: crypto.randomUUID(),
-            title: "Customer Experience Survey",
-            fields: {
-              create: [
-                {
-                  order: 1,
-                  title: "How would you rate our product?",
-                  type: "RATING",
-                  required: true,
-                  properties: { maxRating: 5, shape: "stars" },
-                },
-                {
-                  order: 2,
-                  title: "What do you like most about our product?",
-                  type: "LONG_TEXT",
-                  required: false,
-                },
-                {
-                  order: 3,
-                  title: "How likely are you to recommend us?",
-                  type: "OPINION_SCALE",
-                  required: true,
-                  properties: { min: 0, max: 10, labels: { 0: "Not likely", 10: "Very likely" } },
-                },
-                {
-                  order: 4,
-                  title: "Which product features do you use most?",
-                  type: "CHECKBOXES",
-                  required: true,
-                  options: {
-                    create: [
-                      { order: 1, label: "Core Features" },
-                      { order: 2, label: "Analytics" },
-                      { order: 3, label: "Customization" },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
+      {
+        order: 2,
+        title: "Email Address",
+        type: FieldType.EMAIL,
+        required: true,
+        properties: {
+          placeholder: "Enter your email",
+          pattern: "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$",
+          message: "Please enter a valid email address.",
+        },
+      },
+      {
+        order: 3,
+        title: "Contact Number",
+        type: FieldType.PHONE,
+        required: false,
+        properties: {
+          placeholder: "Enter your phone number",
+          pattern: "^\\+?[1-9]\\d{1,14}$",
+          message: "Please enter a valid phone number.",
+        },
+      },
+      {
+        order: 4,
+        title: "Event Sessions",
+        type: FieldType.CHECKBOXES,
+        required: true,
+        options: [
+          { order: 1, label: "Morning Workshop" },
+          { order: 2, label: "Afternoon Seminar" },
+          { order: 3, label: "Evening Networking" },
         ],
       },
-    },
-  });
-
-  await prisma.template.create({
-    data: {
-      creatorId: adminUser.id,
-      isPublic: true,
-      structure: {
-        theme: { primaryColor: "#2E7D32", font: "Roboto" },
-        settings: { showProgressBar: false, allowMultipleSubmissions: true },
-      },
-      type: "QUIZ",
-      name: "General Knowledge Quiz",
-      description: "Test your audience's general knowledge with engaging questions.",
-      category: "Education",
-      tags: ["quiz", "knowledge", "trivia"],
-      workspaceId: workspace.id,
-      forms: {
-        create: [
-          {
-            creatorId: adminUser.id,
-            slug: crypto.randomUUID(),
-            title: "Trivia Challenge",
-            quizSettings: { showResults: true, passScore: 70 },
-            fields: {
-              create: [
-                {
-                  order: 1,
-                  title: "What is the capital of France?",
-                  type: "QUIZ",
-                  required: true,
-                  options: {
-                    create: [
-                      { order: 1, label: "Paris", isCorrect: true },
-                      { order: 2, label: "London", isCorrect: false },
-                      { order: 3, label: "Berlin", isCorrect: false },
-                    ],
-                  },
-                  points: 10,
-                  explanation: "Paris is the capital city of France.",
-                },
-                {
-                  order: 2,
-                  title: "Which planet is known as the Red Planet?",
-                  type: "QUIZ",
-                  required: true,
-                  options: {
-                    create: [
-                      { order: 1, label: "Mars", isCorrect: true },
-                      { order: 2, label: "Jupiter", isCorrect: false },
-                      { order: 3, label: "Venus", isCorrect: false },
-                    ],
-                  },
-                  points: 10,
-                  explanation: "Mars is called the Red Planet due to its reddish appearance.",
-                },
-              ],
-            },
-          },
+      {
+        order: 5,
+        title: "Meal Preference",
+        type: FieldType.MULTIPLE_CHOICE,
+        required: true,
+        options: [
+          { order: 1, label: "Vegetarian" },
+          { order: 2, label: "Non-Vegetarian" },
+          { order: 3, label: "Vegan" },
         ],
       },
-    },
-  });
-
-  await prisma.template.create({
-    data: {
-      creatorId: adminUser.id,
-      isPublic: true,
-      structure: {
-        theme: { primaryColor: "#D81B60", font: "Lato" },
-        settings: { showProgressBar: true, allowMultipleSubmissions: true },
+      {
+        order: 6,
+        title: "Additional Comments",
+        type: FieldType.LONG_TEXT,
+        required: false,
+        properties: {
+          placeholder: "Any special requirements or notes?",
+          maxLength: 500,
+        },
       },
-      type: "POLL",
-      name: "Event Feedback Poll",
-      description: "Collect quick feedback from event attendees.",
-      category: "Events",
-      tags: ["poll", "event", "feedback"],
-      workspaceId: workspace.id,
-      forms: {
-        create: [
-          {
-            creatorId: adminUser.id,
-            slug: crypto.randomUUID(),
-            title: "Event Satisfaction Poll",
-            pollSettings: { showResults: true, multipleResponses: false },
-            fields: {
-              create: [
-                {
-                  order: 1,
-                  title: "How would you rate the event overall?",
-                  type: "RATING",
-                  required: true,
-                  properties: { maxRating: 5, shape: "hearts" },
-                },
-                {
-                  order: 2,
-                  title: "What was your favorite part of the event?",
-                  type: "POLL_CHOICE",
-                  required: true,
-                  options: {
-                    create: [
-                      { order: 1, label: "Keynote Speech" },
-                      { order: 2, label: "Networking Sessions" },
-                      { order: 3, label: "Workshops" },
-                    ],
-                  },
-                },
-                {
-                  order: 3,
-                  title: "Would you attend again?",
-                  type: "TRUE_FALSE",
-                  required: true,
-                },
-              ],
-            },
-          },
+      {
+        order: 7,
+        title: "Terms and Conditions",
+        type: FieldType.CHECKBOXES,
+        required: true,
+        options: [
+          { order: 1, label: "I agree to the event terms and conditions" },
         ],
       },
-    },
-  });
+    ],
+  };
 
+  // Create the template with fields in the structure
   await prisma.template.create({
     data: {
       creatorId: adminUser.id,
       isPublic: true,
-      structure: {
-        theme: { primaryColor: "#0288D1", font: "Open Sans" },
-        settings: { showProgressBar: false, allowMultipleSubmissions: false },
-      },
-      type: "REGISTRATION",
+      structure: templateStructure as JsonObject,
+      type: FormType.REGISTRATION,
       name: "Event Registration Form",
-      description: "Register attendees for your upcoming event.",
-      category: "Events",
-      tags: ["registration", "event", "signup"],
+      description: "A template for collecting attendee details for events.",
+      category: "Event Registration",
+      tags: ["event", "registration", "form"],
       workspaceId: workspace.id,
-      forms: {
-        create: [
-          {
-            creatorId: adminUser.id,
-            slug: crypto.randomUUID(),
-            title: "Event Registration",
-            fields: {
-              create: [
-                {
-                  order: 1,
-                  title: "Full Name",
-                  type: "SHORT_TEXT",
-                  required: true,
-                },
-                {
-                  order: 2,
-                  title: "Email Address",
-                  type: "EMAIL",
-                  required: true,
-                },
-                {
-                  order: 3,
-                  title: "Phone Number",
-                  type: "PHONE",
-                  required: false,
-                },
-                {
-                  order: 4,
-                  title: "Dietary Restrictions",
-                  type: "CHECKBOXES",
-                  required: false,
-                  options: {
-                    create: [
-                      { order: 1, label: "Vegetarian" },
-                      { order: 2, label: "Vegan" },
-                      { order: 3, label: "Gluten-Free" },
-                    ],
-                  },
-                },
-              ],
-            },
-          },
-        ],
-      },
     },
   });
 
-  await prisma.template.create({
-    data: {
-      creatorId: adminUser.id,
-      isPublic: true,
-      structure: {
-        theme: { primaryColor: "#F57C00", font: "Montserrat" },
-        settings: { showProgressBar: true, allowMultipleSubmissions: false },
-      },
-      type: "CONTACT",
-      name: "Contact Us Form",
-      description: "Simple contact form for customer inquiries.",
-      category: "Customer Support",
-      tags: ["contact", "support", "inquiry"],
-      workspaceId: workspace.id,
-      forms: {
-        create: [
-          {
-            creatorId: adminUser.id,
-            slug: crypto.randomUUID(),
-            title: "Contact Us",
-            fields: {
-              create: [
-                {
-                  order: 1,
-                  title: "Your Name",
-                  type: "SHORT_TEXT",
-                  required: true,
-                },
-                {
-                  order: 2,
-                  title: "Email Address",
-                  type: "EMAIL",
-                  required: true,
-                },
-                {
-                  order: 3,
-                  title: "Subject",
-                  type: "SHORT_TEXT",
-                  required: true,
-                },
-                {
-                  order: 4,
-                  title: "Your Message",
-                  type: "LONG_TEXT",
-                  required: true,
-                },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  });
-
-  console.log("✅ Seed data with multiple public templates created!");
+  console.log("✅ Event Registration template seeded!");
 }

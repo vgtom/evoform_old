@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { FC, useState } from "react";
 import {
   Select,
   SelectContent,
@@ -16,7 +16,7 @@ import NewFormPopup from "./NewFormPopup";
 import NewWorkspacePopup from "../Workspace/NewWorkspacePopup";
 import SearchInput from "../../../components/SearchInput";
 
-const FormsBar = () => {
+const FormsBar: FC<{onDebouncedSearch: (text: string) => void}> = ({onDebouncedSearch}) => {
   const { data: workspaces } = useQuery(getWorkspaces);
   const [newFormPopupOpen, setNewFormPopupOpen] = useState(false);
   const [newWorkspacePopupOpen, setNewWorkspacePopupOpen] = useState(false);
@@ -45,7 +45,7 @@ const FormsBar = () => {
           </Select>
         </div>
         <div className="RIGHT flex gap-2">
-          <SearchInput className="rounded-md" />
+          <SearchInput className="rounded-md" debounceAction={onDebouncedSearch} />
           <Button onClick={() => setNewFormPopupOpen(true)}>
             <Plus /> New Form
           </Button>
