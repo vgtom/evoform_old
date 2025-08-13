@@ -153,6 +153,11 @@ page Forms {
   component: import Forms from "@src/client/pages/FormsPage"
 }
 
+route FormBuilderRoute { path: "/forms/:formSlug", to: FormBuilder }
+page FormBuilder {
+  component: import FormBuilder from "@src/client/pages/FormBuilderPage"
+}
+
 
 //#endregion
 
@@ -179,9 +184,25 @@ query getPublicTemplates {
 
 //#endregion
 
+//#region Form
+
+query getForms {
+  fn: import getForms from "@src/backend/form/getForms",
+  entities: [Form, Workspace]
+}
+
+query getFormBySlug {
+  fn: import getFormBySlug from "@src/backend/form/getFormBySlug",
+  entities: [Form, Workspace]
+}
+
+action makeFormWithTemplateId {
+  fn: import { makeFormWithTemplateId } from "@src/backend/form/makeFormWithTemplateId",
+  entities: [Template, Form, Workspace]
+}
 
 
-
+//#endregion
 
 
 

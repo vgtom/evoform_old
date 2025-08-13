@@ -38,7 +38,7 @@ const UserLayout: ReactFunctionWithChildren = ({ children }) => {
       title: "Forms",
       to: routes.FormsRoute.to,
       icon: <PlusCircleIcon />,
-      isActive: location.pathname === "/forms",
+      isActive: location.pathname.startsWith("/forms"),
     },
     {
       title: "User",
@@ -57,11 +57,11 @@ const UserLayout: ReactFunctionWithChildren = ({ children }) => {
       <TooltipProvider delayDuration={100}>
         <div className="relative">
           <button
-            className="absolute top-0 left-[100%] text-green-300 p-3"
+            className="absolute z-20 top-2 left-[calc(100%-12px)] text-white  bg-green-500 rounded-full scale-125"
             onClick={toggleSidebar}
           >
             <ChevronLeftCircle
-              color="black"
+              // color="black"
               className={cn(open ? "" : "rotate-180", "transition-all ")}
             />
           </button>
@@ -105,7 +105,7 @@ const UserLayout: ReactFunctionWithChildren = ({ children }) => {
           </div>
         </div>
       </TooltipProvider>
-      <div className="overflow-auto min-h-screen bg-gradient-to-br from-green-50">{children}</div>
+      <div className="overflow-y-auto overflow-x-hidden min-h-screen bg-gradient-to-br from-green-50">{children}</div>
     </div>
   );
 };
