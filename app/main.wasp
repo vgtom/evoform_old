@@ -201,6 +201,11 @@ action makeFormWithTemplateId {
   entities: [Template, Form, Workspace]
 }
 
+action updateForm {
+  fn: import updateForm from "@src/backend/form/updateForm",
+  entities: [Form, Field, Option, User, Workspace, File]
+}
+
 
 //#endregion
 

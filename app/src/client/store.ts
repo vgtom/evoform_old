@@ -1,4 +1,4 @@
-import { Field, Form, Option } from "wasp/entities";
+import { Field, Form, Option, File } from "wasp/entities";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { GetFormBySlugOutput } from "../backend/form/getFormBySlug";
@@ -49,13 +49,12 @@ export const useWorkspaceStore = create<WorkspaceStoreState>()(
 type FormWithFields = Form & {
   fields: (Field & {
     options?: Option[] | null;
+    coverImage?: File | null ;
   })[];
 };
 
 type FormBuilderStoreState = {
-  storedEdittingFormId: string | null;
   storedForm: FormWithFields | null;
-  updateEdittingFormId: (id: string) => void
   updateStoredForm: (updatedForm: FormWithFields | null) => void;
 };
 
@@ -64,9 +63,8 @@ export const useFormBuilderStore = create<FormBuilderStoreState>()(
     (set) => ({
       storedEdittingFormId: null,
       storedForm: null,
-      updateEdittingFormId: (id) => set({ storedEdittingFormId: id  }),
-        updateStoredForm: (updatedForm) => 
-        set({ storedForm: updatedForm, storedEdittingFormId: updatedForm?.id }),
+      updateStoredForm: (updatedForm) =>
+        set({ storedForm: updatedForm }),
     }),
     {
       name: "formbuilder-store", // storage key
