@@ -4,7 +4,7 @@ import {
   Settings2,
   UserCircle
 } from "lucide-react";
-import React, { FC, ReactNode, useState } from "react";
+import React, { FC, ReactNode } from "react";
 import { Link, routes } from "wasp/client/router";
 import { cn } from "../../lib/utils";
 import {
@@ -15,7 +15,7 @@ import {
 } from "../../components/ui/tooltip";
 import { useSidebarStore } from "../store";
 
-export type ReactFunctionWithChildren = FC<{ children: React.ReactNode }>;
+export type ReactFunctionWithChildren = FC<{ children: React.ReactNode, showSiderbar?: boolean }>;
 
 type MenuItem = {
   icon: ReactNode;
@@ -28,7 +28,7 @@ type MenuItem = {
   tag?: string;
 };
 
-const UserLayout: ReactFunctionWithChildren = ({ children }) => {
+const UserLayout: ReactFunctionWithChildren = ({ children, showSiderbar = true }) => {
   // const [open, setOpen] = useState(false);
   const {isSidebarOpened: open, toggleSidebar} = useSidebarStore()
   
@@ -51,10 +51,10 @@ const UserLayout: ReactFunctionWithChildren = ({ children }) => {
   return (
     <div
       className={cn(
-        "grid grid-cols-[max-content_1fr] overflow-hidden h-screen transition-all"
+        "grid  overflow-hidden h-screen transition-all", showSiderbar ? "grid-cols-[max-content_1fr]" : "grid-cols-1"
       )}
     >
-      <TooltipProvider delayDuration={100}>
+      {showSiderbar && <TooltipProvider delayDuration={100}>
         <div className="relative">
           <button
             className="absolute z-20 top-2 left-[calc(100%-12px)] text-white  bg-green-500 rounded-full scale-125"
@@ -104,7 +104,11 @@ const UserLayout: ReactFunctionWithChildren = ({ children }) => {
             </div>
           </div>
         </div>
+<<<<<<< HEAD
+      </TooltipProvider>}
+=======
       </TooltipProvider>
+>>>>>>> main
       <div className="overflow-y-auto overflow-x-hidden min-h-screen bg-gradient-to-br from-green-50">{children}</div>
     </div>
   );

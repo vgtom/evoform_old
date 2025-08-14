@@ -141,10 +141,12 @@ model Form {
 
 // Form Fields/Questions
 model Field {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  type        FieldType
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  type         FieldType
+  coverImageId String?
+  coverImage   File?      @relation(fields: [coverImageId], references: [id], onDelete: Cascade)
 
   // Field Configuration
   required   Boolean  @default(false)
@@ -348,6 +350,7 @@ model File {
   type      String
   key       String
   uploadUrl String
+  Field     Field[]
 }
 
 // Enums
