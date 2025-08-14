@@ -1,5 +1,9 @@
 import { z } from "zod";
+<<<<<<< HEAD
 import { Form, Workspace, Field, Option, File } from "wasp/entities";
+=======
+import { Form, Workspace, Field, Option } from "wasp/entities";
+>>>>>>> main
 import { FormStatus, AccessType } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
 import { GetFormBySlug } from "wasp/server/operations";
@@ -18,7 +22,10 @@ type GetFormBySlugInput = z.infer<typeof GetFormBySlugInputSchema>;
 // Define the enhanced form type with relations - make it more flexible
 type FormWithRelations = Form & {
   fields: (Field & {
+<<<<<<< HEAD
     coverImage?: File | null;
+=======
+>>>>>>> main
     options?: Option[] | null;
   })[];
   workspace?: {
@@ -87,7 +94,10 @@ const getFormBySlug: GetFormBySlug<
     const include: Prisma.FormInclude = {
       fields: {
         include: {
+<<<<<<< HEAD
           coverImage: true,
+=======
+>>>>>>> main
           options: {
             orderBy: { order: "asc" },
           },

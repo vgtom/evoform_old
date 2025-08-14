@@ -104,7 +104,11 @@ const UserLayout: ReactFunctionWithChildren = ({ children, showSiderbar = true }
             </div>
           </div>
         </div>
+<<<<<<< HEAD
       </TooltipProvider>}
+=======
+      </TooltipProvider>
+>>>>>>> main
       <div className="overflow-y-auto overflow-x-hidden min-h-screen bg-gradient-to-br from-green-50">{children}</div>
     </div>
   );
